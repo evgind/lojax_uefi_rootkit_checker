@@ -688,6 +688,7 @@ def main ():
 
 
         if(os.path.exists("/sys/firmware/efi")):
+		   print ('Your BIOS is vulnurable...Performing firmware check')	
            Uefi_Parser_Table()
 
         else:
