@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 #evgind@gmail.com V0.1
-
-#Yalnizca ProLiant DL180 ve ProLiant DL360 tipi sunucular icin firmware kontrolune uygundur.
 #This script performs firmware checks for only ProLiant DL180 and ProLiant DL360.
 
 import sys, os, argparse, subprocess, re, pkg_resources, json, contextlib, time
